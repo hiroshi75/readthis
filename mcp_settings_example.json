@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "readthis-server": {
+      "command": "python",
+      "args": ["path/to/readthis/server.py"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
