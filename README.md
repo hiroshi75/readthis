@@ -1,5 +1,15 @@
 # ReadThis MCP Server
 
+## Background and Motivation
+
+When developing applications with AI agents using modern libraries like LangChain or LangGraph, we often encounter a significant challenge: AI models lack knowledge of the latest APIs and documentation. These libraries evolve rapidly, with new features and API changes that aren't reflected in the AI's training data.
+
+While one solution is to include API documentation in prompts, this approach quickly becomes cumbersome and inefficient. It requires constant manual updates and consumes valuable token space that could be used for more specific instructions.
+
+The ReadThis MCP server was developed to address these limitations. It provides AI agents with direct access to the most current library documentation during software development, allowing them to write more accurate and up-to-date code without requiring extensive prompt engineering.
+
+## Overview
+
 This MCP server is a tool that allows AI agents to access the latest library documentation during software development. It retrieves documentation from the web as specified in the `manuals.json` file placed in the user's project and adds it to the AI's context.
 
 ## manuals.json Format
