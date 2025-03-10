@@ -12,9 +12,19 @@ The ReadThis MCP server was developed to address these limitations. It provides 
 
 This MCP server is a tool that allows AI agents to access the latest library documentation during software development. It retrieves documentation from the web as specified in the `manuals.json` file placed in your project and adds it to the AI's context.
 
+## Installation in Cline
+
+To install the ReadThis MCP server in Cline, simply ask Cline with the following prompt:
+
+```
+Can you install MCP server ReadThis from 'https://github.com/hiroshi75/readthis.git' (see below for site content)?
+```
+
+Cline will automatically clone the repository, install the necessary dependencies, and configure the MCP server for you.
+
 ## manuals.json Format
 
-Place a `manuals.json` file in the root directory of your project. This file should describe the documentation information in the following format:
+After installing, place a `manuals.json` file in the root directory of your project. This file should describe the documentation information in the following format:
 
 ```json
 {
