@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-ReadThis MCPサーバーのモックテスト
+Mock test for ReadThis MCP Server
 
-このスクリプトは、MCPサーバーとの連携をモックでシミュレートし、
-readthisツールの動作を確認します。
+This script simulates the integration with the MCP server using mocks,
+and verifies the operation of the readthis tool.
 """
 
 import os
@@ -15,13 +15,13 @@ import unittest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 
-# テスト対象のモジュールのパスを追加
+# Add path to the module being tested
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# html_parserのimport
+# Import html_parser
 from html_parser import fetch_document, parse_html_content, DocumentFetchError
 
-# サーバークラスのモック作成用
+# For creating server class mock
 class MockServer:
     def __init__(self):
         self.tool_handlers = {}
@@ -32,7 +32,7 @@ class MockServer:
             return func
         return decorator
 
-# テスト用のmcpモジュールをモック
+# Mock the mcp module for testing
 class MockMcp:
     @staticmethod
     async def use_tool(server_name, tool_name, args):
@@ -43,11 +43,11 @@ class MockMcp:
         if not url:
             raise ValueError("URL is required")
         
-        # 実際のfetch_documentとparse_html_contentを呼び出す代わりにモックレスポンスを返す
+        # Return mock response instead of calling actual fetch_document and parse_html_content
         if url.startswith(("http://", "https://")):
             return f"Mock content for {url}"
         else:
-            # IDからURLを解決する場合
+            # When resolving URL from ID
             mock_docs = {
                 "python-asyncio": "https://docs.python.org/3/library/asyncio.html",
                 "react-hooks": "https://react.dev/reference/react"
@@ -59,20 +59,20 @@ class MockMcp:
 
 
 class TestReadThisMockMcp(unittest.TestCase):
-    """ReadThis MCPサーバーのモックテスト"""
+    """Mock test for ReadThis MCP Server"""
     
     def setUp(self):
-        """テスト環境のセットアップ"""
-        # サーバーのモックを作成
+        """Set up test environment"""
+        # Create server mock
         self.mock_server = MockServer()
         
-        # 実際のサーバーコードを部分的に再現
+        # Partially reproduce the actual server code
         def resolve_url(url_or_id):
-            # 既にURLの場合はそのまま返す
+            # If it's already a URL, return it as is
             if url_or_id.startswith(('http://', 'https://')):
                 return url_or_id
             
-            # IDからURLを解決
+            # Resolve URL from ID
             mock_docs = {
                 "python-asyncio": "https://docs.python.org/3/library/asyncio.html",
                 "react-hooks": "https://react.dev/reference/react"
@@ -80,102 +80,102 @@ class TestReadThisMockMcp(unittest.TestCase):
             
             resolved_url = mock_docs.get(url_or_id)
             if not resolved_url:
-                raise ValueError(f"無効なドキュメントID: {url_or_id}")
+                raise ValueError(f"Invalid document ID: {url_or_id}")
             
             return resolved_url
         
-        # readthisツール関数の定義
+        # Define readthis tool function
         @self.mock_server.tool("readthis")
         async def readthis(url):
             try:
-                print(f"[Mock] ドキュメント取得リクエスト: {url}")
+                print(f"[Mock] Document retrieval request: {url}")
                 
-                # URLの解決
+                # Resolve URL
                 resolved_url = resolve_url(url)
-                print(f"[Mock] 解決されたURL: {resolved_url}")
+                print(f"[Mock] Resolved URL: {resolved_url}")
                 
-                # 実際のHTTP取得と解析はスキップし、モックレスポンスを返す
+                # Skip actual HTTP retrieval and parsing, return mock response
                 return f"Mock content for {resolved_url}"
                 
             except ValueError as e:
-                print(f"[Mock Error] 無効なURL/ID: {str(e)}")
+                print(f"[Mock Error] Invalid URL/ID: {str(e)}")
                 raise ValueError(str(e))
             except Exception as e:
-                print(f"[Mock Error] 予期しないエラー: {str(e)}")
+                print(f"[Mock Error] Unexpected error: {str(e)}")
                 raise Exception(str(e))
     
-    @patch('sys.stdout')  # 標準出力をキャプチャするためのパッチ
+    @patch('sys.stdout')  # Patch to capture standard output
     def test_readthis_with_url(self, mock_stdout):
-        """URLを使用したreadthisツールのテスト"""
+        """Test readthis tool using URL"""
         import asyncio
         
-        # テスト用URL
+        # Test URL
         test_url = "https://example.com/test"
         
-        # readthisツール関数を非同期で実行
+        # Execute readthis tool function asynchronously
         result = asyncio.run(self.mock_server.tool_handlers["readthis"](test_url))
         
-        # 結果の検証
+        # Verify results
         self.assertIsNotNone(result)
         self.assertIn("Mock content for", result)
         self.assertIn(test_url, result)
-        print(f"[テスト] readthis_with_url: 成功")
+        print(f"[Test] readthis_with_url: success")
     
     @patch('sys.stdout')
     def test_readthis_with_id(self, mock_stdout):
-        """ドキュメントIDを使用したreadthisツールのテスト"""
+        """Test readthis tool using document ID"""
         import asyncio
         
-        # テスト用ID
+        # Test ID
         test_id = "python-asyncio"
         expected_url = "https://docs.python.org/3/library/asyncio.html"
         
-        # readthisツール関数を非同期で実行
+        # Execute readthis tool function asynchronously
         result = asyncio.run(self.mock_server.tool_handlers["readthis"](test_id))
         
-        # 結果の検証
+        # Verify results
         self.assertIsNotNone(result)
         self.assertIn("Mock content for", result)
         self.assertIn(expected_url, result)
-        print(f"[テスト] readthis_with_id: 成功")
+        print(f"[Test] readthis_with_id: success")
     
     @patch('sys.stdout')
     def test_readthis_with_invalid_id(self, mock_stdout):
-        """無効なIDを使用したreadthisツールのテスト"""
+        """Test readthis tool using invalid ID"""
         import asyncio
         
-        # 無効なID
+        # Invalid ID
         invalid_id = "non-existent-id"
         
-        # 例外が発生することを確認
+        # Confirm that an exception is raised
         with self.assertRaises(ValueError):
             asyncio.run(self.mock_server.tool_handlers["readthis"](invalid_id))
         
-        print(f"[テスト] readthis_with_invalid_id: 成功")
+        print(f"[Test] readthis_with_invalid_id: success")
     
     def test_mock_mcp_use_tool(self):
-        """MockMcpクラスを使用したuse_toolのテスト"""
+        """Test use_tool using MockMcp class"""
         import asyncio
         
-        # モックMCPインスタンス
+        # Mock MCP instance
         mock_mcp = MockMcp()
         
-        # URLでテスト
+        # Test with URL
         result1 = asyncio.run(mock_mcp.use_tool("readthis-server", "readthis", {"url": "https://example.com/test"}))
         self.assertIn("Mock content for", result1)
         
-        # IDでテスト
+        # Test with ID
         result2 = asyncio.run(mock_mcp.use_tool("readthis-server", "readthis", {"url": "python-asyncio"}))
         self.assertIn("Mock content for resolved URL", result2)
         self.assertIn("asyncio", result2)
         
-        # 無効なIDでテスト
+        # Test with invalid ID
         with self.assertRaises(ValueError):
             asyncio.run(mock_mcp.use_tool("readthis-server", "readthis", {"url": "non-existent-id"}))
         
-        print(f"[テスト] mock_mcp_use_tool: 成功")
+        print(f"[Test] mock_mcp_use_tool: success")
 
 
 if __name__ == "__main__":
-    print("ReadThis MCPサーバーのモックテストを開始します...")
+    print("Starting mock tests for ReadThis MCP Server...")
     unittest.main()

@@ -1,7 +1,7 @@
 [project]
 name = "readthis"
 version = "0.1.0"
-description = "ドキュメント参照のためのMCPプラグイン"
+description = "MCP plugin for document reference"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

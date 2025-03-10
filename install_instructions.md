@@ -1,40 +1,40 @@
-# ReadThis MCPプラグインのインストール手順
+# Installation Instructions for ReadThis MCP Plugin
 
-このドキュメントでは、ReadThis MCPプラグインのインストール方法と設定について説明します。
+This document explains how to install and configure the ReadThis MCP plugin.
 
-## 前提条件
+## Prerequisites
 
-- Python 3.12 以上
-- uv（パッケージインストール用）
-- Cline拡張機能がインストールされたClaudeデスクトップアプリ
+- Python 3.12 or higher
+- uv (for package installation)
+- Claude desktop app with Cline extension installed
 
-## インストール手順
+## Installation Steps
 
-1. リポジトリをクローンまたはダウンロードします。
+1. Clone or download the repository.
 
 ```bash
 git clone <repository-url>
 cd readthis
 ```
 
-2. uvをインストールします。
+2. Install uv.
 
 ```bash
 # Linux, MacOS
 curl -LsSf https://astral.sh/uv/install.sh | sh
-#Windows
+# Windows
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-3. 依存パッケージをインストールします。
+3. Install dependencies.
 
 ```bash
 uv venv
 ```
 
-## MCPサーバーの設定
+## MCP Server Configuration
 
-1. Claudeデスクトップアプリの設定ファイルを開きます。
+1. Open the Claude desktop app configuration file.
 
 Windows:
 ```
@@ -46,7 +46,7 @@ macOS:
 ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
 
-2. 設定ファイルに以下のMCPサーバー定義を追加します。
+2. Add the following MCP server definition to the configuration file.
 
 ```json
 {
@@ -64,11 +64,11 @@ macOS:
 }
 ```
 
-`path/to/readthis/server.py` を実際のserver.pyファイルのパスに置き換えてください。
+Replace `path/to/readthis/server.py` with the actual path to the server.py file.
 
-## 使用方法
+## How to Use
 
-1. プロジェクトのルートディレクトリに `manuals.json` ファイルを作成し、参照したいドキュメントを定義します。
+1. Create a `manuals.json` file in the root directory of your project and define the documents you want to reference.
 
 ```json
 {
@@ -77,29 +77,29 @@ macOS:
       "id": "react-hooks",
       "name": "React Hooks API",
       "url": "https://react.dev/reference/react",
-      "description": "Reactフックの公式ドキュメント。useState, useEffectなどのフック使用時に参照。"
+      "description": "Official React Hooks documentation. Reference when using hooks like useState, useEffect, etc."
     },
     {
       "id": "python-asyncio",
       "url": "https://docs.python.org/3/library/asyncio.html",
       "name": "Python AsyncIO",
-      "description": "Pythonの非同期プログラミングライブラリ。非同期アプリケーション開発時に参照。"
+      "description": "Python's asynchronous programming library. Reference when developing asynchronous applications."
     }
   ]
 }
 ```
 
-2. Claudeに対して、ドキュメントを読み込むよう指示します。
+2. Ask Claude to read the documentation.
 
-例:
+Example:
 ```
-Reactフックについて開発しています。ドキュメントを参照して、useStateとuseEffectの使い方を説明してください。
+I'm developing with React hooks. Please reference the documentation and explain how to use useState and useEffect.
 ```
 
-Claudeは必要に応じてReadThis MCPサーバーを使用し、指定されたドキュメントを参照して回答します。
+Claude will use the ReadThis MCP server to access the specified documents as needed to respond.
 
-## トラブルシューティング
+## Troubleshooting
 
-- MCPサーバーが接続されていない場合は、Claude設定ファイルのパスが正しいか確認してください。
-- ドキュメントが取得できない場合は、URLが正しいか、またインターネット接続が利用可能か確認してください。
-- ログを確認するには、server.pyを直接実行して出力を確認してください。
+- If the MCP server is not connected, verify that the path in the Claude configuration file is correct.
+- If the document cannot be retrieved, check that the URL is correct and that internet connection is available.
+- To check logs, run server.py directly and review the output.

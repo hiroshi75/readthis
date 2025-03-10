@@ -12,17 +12,17 @@ from mcp.server.stdio import stdio_server
 from mcp.types import CallToolRequestParams, ErrorData
 from mcp import McpError
 
-# 独自のエラーコード定義
+# Custom error code definition
 class ErrorCode:
-    """エラーコード定義"""
-    # エラーコードは整数値を使用
-    InvalidRequest = 400  # 無効なリクエスト
-    InvalidParams = 422   # 無効なパラメータ
-    InternalError = 500   # 内部エラー
+    """Error code definition"""
+    # Error codes use integer values
+    InvalidRequest = 400  # Invalid request
+    InvalidParams = 422   # Invalid parameters
+    InternalError = 500   # Internal error
 
 from html_parser import fetch_document, parse_html_content, DocumentFetchError
 
-# ロギング設定
+# Logging configuration
 logging.basicConfig(
     level=logging.ERROR,
     format='[%(levelname)s] %(message)s',
@@ -34,183 +34,183 @@ logger = logging.getLogger("readthis-server")
 
 class ReadThisServer:
     """
-    ReadThis MCPサーバー
+    ReadThis MCP Server
     
-    HTMLドキュメントを取得して解析するためのMCPサーバー
+    An MCP server for retrieving and parsing HTML documents
     """
     
     def __init__(self) -> None:
-        """サーバーの初期化"""
-        logger.error("[Setup] ReadThis MCPサーバーを初期化しています...")
+        """Initialize the server"""
+        logger.error("[Setup] Initializing ReadThis MCP Server...")
         
-        # Server型を調整
+        # Adjust Server type
         self.server = Server(
             name="readthis-server", 
             version="0.1.0"
         )
         
-        # manuals.jsonの読み込み
+        # Load manuals.json
         self.documents_config = self._load_documents_config()
         
-        # ツールハンドラの登録
+        # Register tool handlers
         self._register_tools()
         
-        # MCP Serverの初期化完了ログ
-        logger.error("[Setup] Serverオブジェクトが初期化されました")
+        # MCP Server initialization complete log
+        logger.error("[Setup] Server object has been initialized")
         
-        # エラーハンドラの登録（型チェック無視）
-        self.server.onerror = lambda error: logger.error(f"[Error] MCPエラー: {error}")  # type: ignore
+        # Register error handler (ignore type check)
+        self.server.onerror = lambda error: logger.error(f"[Error] MCP error: {error}")  # type: ignore
     
     def _load_documents_config(self) -> Dict:
         """
-        manuals.jsonファイルを読み込む
+        Load the manuals.json file
         
         Returns:
-            Dict: ドキュメント設定の辞書
+            Dict: Dictionary of document settings
         """
         try:
             config_path = Path('./manuals.json')
             if config_path.exists():
                 with open(config_path, 'r', encoding='utf-8') as f:
-                    logger.error(f"[Setup] manuals.jsonを読み込みました: {config_path}")
+                    logger.error(f"[Setup] Loaded manuals.json: {config_path}")
                     return json.load(f)
             else:
-                logger.error("[Setup] manuals.jsonが見つかりません。デフォルト設定を使用します。")
+                logger.error("[Setup] manuals.json not found. Using default settings.")
                 return {"documents": []}
         except Exception as e:
-            logger.error(f"[Error] manuals.jsonの読み込みに失敗しました: {str(e)}")
+            logger.error(f"[Error] Failed to load manuals.json: {str(e)}")
             return {"documents": []}
     
     def _resolve_url(self, url_or_id: str) -> str:
         """
-        URLまたはIDからURLを解決する
+        Resolve a URL from a URL or ID
         
         Args:
-            url_or_id: URLまたはドキュメントID
+            url_or_id: URL or document ID
             
         Returns:
-            str: 解決されたURL
+            str: Resolved URL
             
         Raises:
-            ValueError: IDが無効な場合
+            ValueError: If the ID is invalid
         """
-        # 既にURLの場合はそのまま返す
+        # If it's already a URL, return it as is
         if url_or_id.startswith(('http://', 'https://')):
             return url_or_id
         
-        # IDからURLを解決
+        # Resolve URL from ID
         for doc in self.documents_config.get("documents", []):
             if doc.get("id") == url_or_id:
                 return doc.get("url")
         
-        # 該当するIDが見つからない場合はエラー
-        raise ValueError(f"無効なドキュメントID: {url_or_id}。有効なURLまたはmanuals.jsonで定義されたIDを指定してください。")
+        # Error if matching ID is not found
+        raise ValueError(f"Invalid document ID: {url_or_id}. Please specify a valid URL or an ID defined in manuals.json.")
     
     def _register_tools(self) -> None:
-        """ツールハンドラの登録"""
-        logger.error("[Setup] ツールハンドラを登録しています...")
+        """Register tool handlers"""
+        logger.error("[Setup] Registering tool handlers...")
         
-        # readthisツールのハンドラ定義
+        # Define handler for readthis tool
         async def handle_readthis_request(request: Any) -> str:
             """
-            指定されたURLからHTMLドキュメントを取得し、その内容を返す
+            Retrieve an HTML document from the specified URL and return its content
             
             Args:
-                request: リクエスト情報（URL情報を含む）
+                request: Request information (including URL)
                 
             Returns:
-                str: 取得したドキュメントの内容
+                str: Content of the retrieved document
             """
-            # URLをリクエストから取得
+            # Get URL from request
             url = request.params.url
             try:
-                logger.error(f"[API] ドキュメント取得リクエスト: {url}")
+                logger.error(f"[API] Document retrieval request: {url}")
                 
-                # URLの解決
+                # Resolve URL
                 resolved_url = self._resolve_url(url)
-                logger.error(f"[API] 解決されたURL: {resolved_url}")
+                logger.error(f"[API] Resolved URL: {resolved_url}")
                 
-                # ドキュメントの取得
+                # Fetch document
                 html_content = fetch_document(resolved_url)
                 
-                # HTMLの解析
+                # Parse HTML
                 parsed_content = parse_html_content(html_content)
                 
-                logger.error(f"[API] ドキュメント取得完了: {len(parsed_content)} 文字")
+                logger.error(f"[API] Document retrieval complete: {len(parsed_content)} characters")
                 return parsed_content
                 
             except ValueError as e:
-                logger.error(f"[Error] 無効なURL/ID: {str(e)}")
+                logger.error(f"[Error] Invalid URL/ID: {str(e)}")
                 raise McpError(ErrorData(code=ErrorCode.InvalidParams, message=str(e)))
             except DocumentFetchError as e:
-                logger.error(f"[Error] ドキュメント取得エラー: {str(e)}")
-                raise McpError(ErrorData(code=ErrorCode.InternalError, message=f"ドキュメントの取得に失敗しました: {str(e)}"))
+                logger.error(f"[Error] Document retrieval error: {str(e)}")
+                raise McpError(ErrorData(code=ErrorCode.InternalError, message=f"Failed to retrieve document: {str(e)}"))
             except Exception as e:
-                logger.error(f"[Error] 予期しないエラー: {str(e)}")
-                raise McpError(ErrorData(code=ErrorCode.InternalError, message=f"予期しないエラーが発生しました: {str(e)}"))
+                logger.error(f"[Error] Unexpected error: {str(e)}")
+                raise McpError(ErrorData(code=ErrorCode.InternalError, message=f"An unexpected error occurred: {str(e)}"))
         
-        # reload_manualsツールのハンドラ定義
+        # Define handler for reload_manuals tool
         async def handle_reload_manuals_request(request: Any) -> Dict:
             """
-            manuals.jsonファイルを再読み込みしてドキュメント設定を更新するハンドラ
+            Handler to reload the manuals.json file and update document settings
             
             Args:
-                request: リクエスト情報
+                request: Request information
                 
             Returns:
-                Dict: 更新後のドキュメント設定情報と結果ステータス
+                Dict: Document settings information after update and result status
             """
             try:
-                logger.error("[API] manuals.jsonのリロードを開始します")
+                logger.error("[API] Starting manuals.json reload")
                 
-                # 設定ファイルを再読み込み前の状態を記録
+                # Record state before reloading configuration file
                 previous_count = len(self.documents_config.get("documents", []))
                 
-                # 設定ファイルを再読み込み
+                # Reload configuration file
                 self.documents_config = self._load_documents_config()
                 
-                # 更新後の状態を取得
+                # Get state after update
                 current_count = len(self.documents_config.get("documents", []))
                 
-                # 結果を返す
+                # Return result
                 result = {
                     "success": True,
-                    "message": f"manuals.jsonを正常にリロードしました",
+                    "message": f"Successfully reloaded manuals.json",
                     "previous_documents_count": previous_count,
                     "current_documents_count": current_count, 
                     "documents": self.documents_config
                 }
                 
-                logger.error(f"[API] manuals.jsonのリロード完了: {current_count} 件のドキュメント設定")
+                logger.error(f"[API] manuals.json reload complete: {current_count} document settings")
                 return result
                 
             except Exception as e:
-                logger.error(f"[Error] manuals.jsonのリロード中にエラーが発生しました: {str(e)}")
-                raise McpError(ErrorData(code=ErrorCode.InternalError, message=f"設定ファイルのリロードに失敗しました: {str(e)}"))
+                logger.error(f"[Error] An error occurred while reloading manuals.json: {str(e)}")
+                raise McpError(ErrorData(code=ErrorCode.InternalError, message=f"Failed to reload configuration file: {str(e)}"))
                 
-        # ツールハンドラの登録（実際のMCP APIに合わせて修正が必要な場合があります）
-        # 現在はコメントアウトしていますが、実際のMCP SDKの仕様に合わせて実装してください
-        logger.error("[Setup] ツールハンドラの登録方法はMCP SDKの仕様に合わせて実装してください")
+        # Register tool handlers (may need to be modified according to actual MCP API)
+        # Currently commented out, please implement according to the MCP SDK specifications
+        logger.error("[Setup] Please implement tool handler registration according to MCP SDK specifications")
         
-        # 例: CallToolRequestParamsを処理するハンドラの登録
+        # Example: Register a handler for CallToolRequestParams
         # self.server.tool("readthis", readthis_handler)
         # self.server.tool("reload_manuals", reload_manuals_handler)
     
     async def run(self) -> None:
-        """サーバーの実行"""
+        """Run the server"""
         transport = stdio_server()
         await self.server.connect(transport)  # type: ignore
-        logger.error("[Setup] ReadThis MCPサーバーが起動しました（stdio経由）")
+        logger.error("[Setup] ReadThis MCP Server started (via stdio)")
 
 
 if __name__ == "__main__":
     import asyncio
     
-    server = ReadThisServer()
+    server: ReadThisServer = ReadThisServer()
     
     try:
         asyncio.run(server.run())
     except KeyboardInterrupt:
-        logger.error("[Setup] サーバーを終了しています...")
+        logger.error("[Setup] Shutting down server...")
     except Exception as e:
-        logger.error(f"[Error] サーバー実行中にエラーが発生しました: {str(e)}")
+        logger.error(f"[Error] An error occurred during server execution: {str(e)}")

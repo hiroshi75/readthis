@@ -7,127 +7,130 @@ from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
 import trafilatura
 
-# ロギング設定
+# Logging configuration
 logger = logging.getLogger("readthis-server")
 
 class DocumentFetchError(Exception):
-    """ドキュメント取得時のエラーを表す例外クラス"""
+    """Exception class representing errors during document retrieval"""
     pass
 
 
 def fetch_document(url: str) -> str:
     """
-    指定されたURLからHTMLドキュメントを取得する
+    Retrieve an HTML document from the specified URL
     
     Args:
-        url: 取得するドキュメントのURL
+        url: URL of the document to retrieve
         
     Returns:
-        str: 取得したHTMLドキュメント
+        str: Retrieved HTML document
         
     Raises:
-        DocumentFetchError: ドキュメントの取得に失敗した場合
+        DocumentFetchError: If document retrieval fails
     """
     try:
-        logger.error(f"[Fetch] ドキュメントを取得しています: {url}")
+        logger.error(f"[Fetch] Retrieving document: {url}")
         
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         }
         
         response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()  # HTTP エラーがある場合は例外を発生
+        response.raise_for_status()  # Raises exception for HTTP errors
         
-        logger.error(f"[Fetch] ドキュメント取得成功: {len(response.text)} バイト")
+        logger.error(f"[Fetch] Document retrieval successful: {len(response.text)} bytes")
         return response.text
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"[Error] ドキュメント取得リクエストエラー: {str(e)}")
-        raise DocumentFetchError(f"ドキュメントの取得に失敗しました: {str(e)}")
+        logger.error(f"[Error] Document retrieval request error: {str(e)}")
+        raise DocumentFetchError(f"Failed to retrieve document: {str(e)}")
     except Exception as e:
-        logger.error(f"[Error] 予期しない取得エラー: {str(e)}")
-        raise DocumentFetchError(f"予期しないエラーが発生しました: {str(e)}")
+        logger.error(f"[Error] Unexpected retrieval error: {str(e)}")
+        raise DocumentFetchError(f"An unexpected error occurred: {str(e)}")
 
 
 def parse_html_content(html_content: str) -> str:
     """
-    HTMLコンテンツからメインコンテンツを抽出する
+    Extract main content from HTML content
     
     Args:
-        html_content: 解析するHTMLコンテンツ
+        html_content: HTML content to parse
         
     Returns:
-        str: 抽出されたメインコンテンツ
+        str: Extracted main content
         
     Raises:
-        ValueError: HTMLの解析に失敗した場合
+        ValueError: If HTML parsing fails
     """
     try:
-        logger.error("[Parse] HTMLコンテンツを解析しています...")
+        logger.error("[Parse] Parsing HTML content...")
         
-        # trafilaturaを使用してメインコンテンツを抽出
+        # Extract main content using trafilatura
         extracted_text = trafilatura.extract(html_content, include_links=True, include_images=True, include_tables=True)
         
-        # trafilaturaで抽出できなかった場合はBeautifulSoupでシンプルに抽出を試みる
+        # If extraction with trafilatura fails, try simple extraction with BeautifulSoup
         if not extracted_text:
-            logger.error("[Parse] trafilaturaでの抽出に失敗したため、BeautifulSoupを使用します")
+            logger.error("[Parse] Extraction with trafilatura failed, using BeautifulSoup")
             soup = BeautifulSoup(html_content, 'html.parser')
             
-            # スクリプトと不要なタグを削除
+            # Remove scripts and unnecessary tags
             for script in soup(["script", "style"]):
                 script.extract()
                 
-            # ページの本文を抽出
+            # Extract page body
             body = soup.body
             if body:
-                # ヘッダーとフッターらしきものを除去する試み
+                # Attempt to remove headers and footers
                 for unwanted in body.select('header, footer, nav, .sidebar, #sidebar, .menu, #menu, .navigation, .ads, .advertisement'):
                     unwanted.extract()
                 
-                # メインコンテンツらしきものを探す
+                # Look for main content
                 main_content = body.select_one('main, #main, .main, article, .article, .content, #content')
                 if main_content:
                     extracted_text = main_content.get_text(separator='\n')
                 else:
-                    # 見つからない場合はbodyの全テキストを使用
+                    # If not found, use all text from body
                     extracted_text = body.get_text(separator='\n')
             else:
-                # bodyが見つからない場合
+                # If body is not found
                 extracted_text = soup.get_text(separator='\n')
             
-            # 余分な空白と改行を整理
+            # Clean up extra whitespace and line breaks
             lines = (line.strip() for line in extracted_text.splitlines())
             extracted_text = '\n'.join(line for line in lines if line)
         
-        logger.error(f"[Parse] コンテンツ抽出完了: {len(extracted_text)} 文字")
+        logger.error(f"[Parse] Content extraction complete: {len(extracted_text)} characters")
         return extracted_text
         
     except Exception as e:
-        logger.error(f"[Error] HTML解析エラー: {str(e)}")
-        raise ValueError(f"HTMLの解析に失敗しました: {str(e)}")
+        logger.error(f"[Error] HTML parsing error: {str(e)}")
+        raise ValueError(f"Failed to parse HTML: {str(e)}")
 
 
 def get_document_metadata(url: str) -> Dict[str, Any]:
     """
-    ドキュメントのメタデータ（タイトル、説明など）を取得する
+    Get document metadata (title, description, etc.)
     
     Args:
-        url: 取得するドキュメントのURL
+        url: URL of the document to retrieve
         
     Returns:
-        Dict[str, Any]: メタデータの辞書
+        Dict[str, Any]: Dictionary of metadata
     """
     try:
         html_content = fetch_document(url)
         soup = BeautifulSoup(html_content, 'html.parser')
         
-        title = soup.title.string if soup.title else "不明なタイトル"
+        title = soup.title.string if soup.title else "Unknown Title"
         
-        # メタ説明の取得を試みる
+        # Try to get meta description
         description = ""
         meta_desc = soup.find('meta', attrs={'name': 'description'})
-        if meta_desc and 'content' in meta_desc.attrs:
-            description = meta_desc['content']
+        # Safe access to BeautifulSoup element attributes with type checking
+        if meta_desc is not None:
+            # Use dictionary-style access with get method to avoid type errors
+            attrs = getattr(meta_desc, 'attrs', {})
+            description = attrs.get('content', '')  # type: ignore
         
         return {
             "title": title.strip() if title else "",
@@ -135,9 +138,9 @@ def get_document_metadata(url: str) -> Dict[str, Any]:
             "url": url
         }
     except Exception as e:
-        logger.error(f"[Error] メタデータ取得エラー: {str(e)}")
+        logger.error(f"[Error] Metadata retrieval error: {str(e)}")
         return {
-            "title": "取得エラー",
+            "title": "Retrieval Error",
             "description": "",
             "url": url
         }

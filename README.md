@@ -1,10 +1,10 @@
-# ReadThis MCP サーバー
+# ReadThis MCP Server
 
-このMCPサーバーは、AIエージェントがプログラム開発時に最新のライブラリドキュメントを参照できるようにするためのツールです。ユーザーのプロジェクトに置かれた `manuals.json` ファイルで指定されたドキュメントをウェブから取得し、AIのコンテキストに追加します。
+This MCP server is a tool that allows AI agents to access the latest library documentation during software development. It retrieves documentation from the web as specified in the `manuals.json` file placed in the user's project and adds it to the AI's context.
 
-## manuals.json の形式
+## manuals.json Format
 
-プロジェクトのルートディレクトリに `manuals.json` ファイルを配置します。このファイルには以下の形式でドキュメント情報を記述します：
+Place a `manuals.json` file in the root directory of your project. This file should describe the documentation information in the following format:
 
 ```json
 {
@@ -13,13 +13,13 @@
       "id": "react-hooks",
       "name": "React Hooks API",
       "url": "https://reactjs.org/docs/hooks-reference.html",
-      "description": "Reactフックの公式ドキュメント。useState, useEffectなどのフック使用時に参照。"
+      "description": "Official React Hooks documentation. Reference when using hooks like useState, useEffect, etc."
     },
     {
       "id": "python-asyncio",
       "url": "https://docs.python.org/3/library/asyncio.html",
       "name": "Python AsyncIO",
-      "description": "Pythonの非同期プログラミングライブラリ。非同期アプリケーション開発時に参照。"
+      "description": "Python's asynchronous programming library. Reference when developing asynchronous applications."
     }
   ]
 }
@@ -30,31 +30,31 @@
 ```python
 def readthis(url: str) -> str:
     """
-    指定されたURLからHTMLドキュメントを取得し、その内容を返します。
+    Retrieves an HTML document from the specified URL and returns its content.
     
-    このAPIは、AIエージェントがプログラミングタスクを行う際に参照すべき
-    ライブラリやフレームワークのドキュメントを取得するために使用されます。
-    取得したドキュメントの内容はAIエージェントのコンテキストに追加され、
-    より正確なプログラム開発を支援します。
+    This API is used to fetch documentation for libraries and frameworks that
+    AI agents should reference when performing programming tasks.
+    The content of the retrieved document is added to the AI agent's context
+    to support more accurate program development.
     
     Args:
-        url (str): 取得するドキュメントのURL
-                  ※ manuals.jsonで定義されたIDを使用することも可能です
+        url (str): The URL of the document to retrieve
+                  Note: You can also use an ID defined in manuals.json
     
     Returns:
-        str: 取得したドキュメントの内容（HTML）
-             HTMLから主要なコンテンツ部分を抽出して返します
+        str: The content of the retrieved document (HTML)
+             Returns the main content extracted from the HTML
     
     Raises:
-        ValueError: URLが無効、またはmanuals.jsonに定義されていないIDが指定された場合
-        ConnectionError: ドキュメントの取得に失敗した場合
-        ParseError: HTMLの解析に失敗した場合
+        ValueError: If the URL is invalid or an undefined ID is specified in manuals.json
+        ConnectionError: If the document retrieval fails
+        ParseError: If HTML parsing fails
     
     Examples:
-        # URLを直接指定
+        # Directly specify a URL
         content = readthis("https://docs.python.org/3/library/asyncio.html")
         
-        # manuals.jsonで定義されたIDを使用
+        # Use an ID defined in manuals.json
         content = readthis("python-asyncio")
     """
 ```
@@ -64,64 +64,64 @@ def readthis(url: str) -> str:
 ```python
 def reload_manuals() -> dict:
     """
-    manuals.jsonファイルを再読み込みして、ドキュメント設定を更新します。
+    Reloads the manuals.json file to update document settings.
     
-    サーバー稼働中にmanuals.jsonファイルが更新された場合、
-    このAPIを呼び出すことで設定の変更をリアルタイムに反映できます。
-    サーバーの再起動は不要です。
+    When the manuals.json file is updated while the server is running,
+    calling this API will reflect the changes in real-time.
+    Server restart is not required.
     
     Returns:
-        dict: 更新結果を含む辞書
+        dict: A dictionary containing the update results
             {
-                "success": bool,  # 成功したかどうか
-                "message": str,   # 結果メッセージ
-                "previous_documents_count": int,  # 更新前のドキュメント数
-                "current_documents_count": int,   # 更新後のドキュメント数
-                "documents": dict  # 更新後のドキュメント設定全体
+                "success": bool,  # Whether the operation was successful
+                "message": str,   # Result message
+                "previous_documents_count": int,  # Number of documents before the update
+                "current_documents_count": int,   # Number of documents after the update
+                "documents": dict  # The entire document configuration after the update
             }
     
     Raises:
-        Exception: 設定ファイルの読み込みや解析に失敗した場合
+        Exception: If there is a failure in loading or parsing the configuration file
     
     Examples:
-        # 設定ファイルをリロード
+        # Reload the configuration file
         result = reload_manuals()
-        print(f"リロード結果: {result['message']}")
-        print(f"ドキュメント数: {result['current_documents_count']}")
+        print(f"Reload result: {result['message']}")
+        print(f"Document count: {result['current_documents_count']}")
     """
 ```
 
-## 使用例
+## Usage Example
 
 ```python
-# MCPサーバーのツールを使用
+# Using the MCP server's tool
 from mcp import use_tool
 
-# URLを直接指定してドキュメントを取得
+# Retrieve a document by directly specifying the URL
 react_docs = use_tool("readthis-server", "readthis", {"url": "https://reactjs.org/docs/hooks-reference.html"})
-print(f"React Hooksドキュメント: {len(react_docs)} 文字取得しました")
+print(f"React Hooks documentation: Retrieved {len(react_docs)} characters")
 
-# manuals.jsonで定義されたIDを使用
+# Using an ID defined in manuals.json
 asyncio_docs = use_tool("readthis-server", "readthis", {"url": "python-asyncio"})
-print(f"AsyncIOドキュメント: {len(asyncio_docs)} 文字取得しました")
+print(f"AsyncIO documentation: Retrieved {len(asyncio_docs)} characters")
 
-# manuals.jsonをリロード
+# Reload manuals.json
 reload_result = use_tool("readthis-server", "reload_manuals", {})
-print(f"リロード結果: {reload_result['message']}")
-print(f"ドキュメント数: {reload_result['current_documents_count']} (更新前: {reload_result['previous_documents_count']})")
+print(f"Reload result: {reload_result['message']}")
+print(f"Document count: {reload_result['current_documents_count']} (before update: {reload_result['previous_documents_count']})")
 ```
 
-## 実装詳細
+## Implementation Details
 
-このMCPサーバーは以下の処理を行います：
+This MCP server performs the following processes:
 
-1. URLまたはIDが指定された場合、対応するドキュメントをウェブから取得
-2. HTMLから主要なコンテンツ部分を抽出（余計なヘッダー、フッター、サイドバーなどを除去）
-3. 抽出したコンテンツを文字列として返す
-4. manuals.jsonのリロード機能により、サーバー再起動なしで設定を更新
+1. When a URL or ID is specified, it retrieves the corresponding document from the web
+2. Extracts the main content from the HTML (removing unnecessary headers, footers, sidebars, etc.)
+3. Returns the extracted content as a string
+4. Provides a manuals.json reload functionality that updates settings without requiring server restart
 
-## 制限事項
+## Limitations
 
-- 現在はHTML形式のドキュメントのみに対応しています
-- 認証が必要なサイトのドキュメントは取得できません
-- 一部のサイトではHTMLの構造によってコンテンツの抽出精度が変わる場合があります
+- Currently only supports HTML format documents
+- Cannot retrieve documents from sites that require authentication
+- The accuracy of content extraction may vary depending on the HTML structure of some sites
