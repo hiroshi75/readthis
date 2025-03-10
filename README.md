@@ -17,7 +17,7 @@ This MCP server is a tool that allows AI agents to access the latest library doc
 To install the ReadThis MCP server in Cline, simply ask Cline with the following prompt:
 
 ```
-Can you install MCP server ReadThis from 'https://github.com/hiroshi75/readthis.git' (see below for site content)?
+Can you install MCP server ReadThis from @https://github.com/hiroshi75/readthis.git ?
 ```
 
 Cline will automatically clone the repository, install the necessary dependencies, and configure the MCP server for you.
