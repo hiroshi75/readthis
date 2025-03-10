@@ -5,7 +5,7 @@
 ## 前提条件
 
 - Python 3.12 以上
-- uvまたはpip（パッケージインストール用）
+- uv（パッケージインストール用）
 - Cline拡張機能がインストールされたClaudeデスクトップアプリ
 
 ## インストール手順
@@ -17,16 +17,19 @@ git clone <repository-url>
 cd readthis
 ```
 
-2. 依存パッケージをインストールします。
+2. uvをインストールします。
 
-uvを使用する場合:
 ```bash
-uv pip install -r requirements.txt
+# Linux, MacOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+#Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-pipを使用する場合:
+3. 依存パッケージをインストールします。
+
 ```bash
-pip install -r requirements.txt
+uv venv
 ```
 
 ## MCPサーバーの設定
@@ -49,9 +52,11 @@ macOS:
 {
   "mcpServers": {
     "readthis-server": {
-      "command": "python",
-      "args": ["path/to/readthis/server.py"],
-      "env": {},
+      "command": "uv",
+      "args": ["run", "--", "python", "path/to/readthis/server.py"],
+      "env": {
+        "PWD": "path/to/readthis/"
+      },
       "disabled": false,
       "autoApprove": []
     }
