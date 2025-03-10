@@ -59,6 +59,38 @@ def readthis(url: str) -> str:
     """
 ```
 
+## API: reload_manuals
+
+```python
+def reload_manuals() -> dict:
+    """
+    manuals.jsonファイルを再読み込みして、ドキュメント設定を更新します。
+    
+    サーバー稼働中にmanuals.jsonファイルが更新された場合、
+    このAPIを呼び出すことで設定の変更をリアルタイムに反映できます。
+    サーバーの再起動は不要です。
+    
+    Returns:
+        dict: 更新結果を含む辞書
+            {
+                "success": bool,  # 成功したかどうか
+                "message": str,   # 結果メッセージ
+                "previous_documents_count": int,  # 更新前のドキュメント数
+                "current_documents_count": int,   # 更新後のドキュメント数
+                "documents": dict  # 更新後のドキュメント設定全体
+            }
+    
+    Raises:
+        Exception: 設定ファイルの読み込みや解析に失敗した場合
+    
+    Examples:
+        # 設定ファイルをリロード
+        result = reload_manuals()
+        print(f"リロード結果: {result['message']}")
+        print(f"ドキュメント数: {result['current_documents_count']}")
+    """
+```
+
 ## 使用例
 
 ```python
@@ -72,6 +104,11 @@ print(f"React Hooksドキュメント: {len(react_docs)} 文字取得しまし�
 # manuals.jsonで定義されたIDを使用
 asyncio_docs = use_tool("readthis-server", "readthis", {"url": "python-asyncio"})
 print(f"AsyncIOドキュメント: {len(asyncio_docs)} 文字取得しました")
+
+# manuals.jsonをリロード
+reload_result = use_tool("readthis-server", "reload_manuals", {})
+print(f"リロード結果: {reload_result['message']}")
+print(f"ドキュメント数: {reload_result['current_documents_count']} (更新前: {reload_result['previous_documents_count']})")
 ```
 
 ## 実装詳細
@@ -81,6 +118,7 @@ print(f"AsyncIOドキュメント: {len(asyncio_docs)} 文字取得しました"
 1. URLまたはIDが指定された場合、対応するドキュメントをウェブから取得
 2. HTMLから主要なコンテンツ部分を抽出（余計なヘッダー、フッター、サイドバーなどを除去）
 3. 抽出したコンテンツを文字列として返す
+4. manuals.jsonのリロード機能により、サーバー再起動なしで設定を更新
 
 ## 制限事項
 

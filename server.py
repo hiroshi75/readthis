@@ -7,12 +7,17 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from mcp.server import Server, StdioServerTransport
-from mcp.types import (
-    CallToolRequestSchema, 
-    ErrorCode,
-    McpError
-)
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import CallToolRequestParams
+from mcp import McpError
+
+# 独自のエラーコード定義
+class ErrorCode:
+    """エラーコード定義"""
+    InvalidRequest = "invalid_request"
+    InvalidParams = "invalid_params" 
+    InternalError = "internal_error"
 
 from html_parser import fetch_document, parse_html_content, DocumentFetchError
 
@@ -38,8 +43,8 @@ class ReadThisServer:
         logger.error("[Setup] ReadThis MCPサーバーを初期化しています...")
         
         self.server = Server(
-            info={"name": "readthis-server", "version": "0.1.0"},
-            capabilities={"tools": {}}
+            name="readthis-server", 
+            version="0.1.0"
         )
         
         # manuals.jsonの読み込み
@@ -141,10 +146,47 @@ class ReadThisServer:
             except Exception as e:
                 logger.error(f"[Error] 予期しないエラー: {str(e)}")
                 raise McpError(ErrorCode.InternalError, f"予期しないエラーが発生しました: {str(e)}")
+        
+        # reload_manualsツールの定義
+        @self.server.tool("reload_manuals")
+        async def reload_manuals() -> Dict:
+            """
+            manuals.jsonファイルを再読み込みして、ドキュメント設定を更新します。
+            
+            Returns:
+                Dict: 更新後のドキュメント設定情報と結果ステータス
+            """
+            try:
+                logger.error("[API] manuals.jsonのリロードを開始します")
+                
+                # 設定ファイルを再読み込み前の状態を記録
+                previous_count = len(self.documents_config.get("documents", []))
+                
+                # 設定ファイルを再読み込み
+                self.documents_config = self._load_documents_config()
+                
+                # 更新後の状態を取得
+                current_count = len(self.documents_config.get("documents", []))
+                
+                # 結果を返す
+                result = {
+                    "success": True,
+                    "message": f"manuals.jsonを正常にリロードしました",
+                    "previous_documents_count": previous_count,
+                    "current_documents_count": current_count, 
+                    "documents": self.documents_config
+                }
+                
+                logger.error(f"[API] manuals.jsonのリロード完了: {current_count} 件のドキュメント設定")
+                return result
+                
+            except Exception as e:
+                logger.error(f"[Error] manuals.jsonのリロード中にエラーが発生しました: {str(e)}")
+                raise McpError(ErrorCode.InternalError, f"設定ファイルのリロードに失敗しました: {str(e)}")
     
     async def run(self) -> None:
         """サーバーの実行"""
-        transport = StdioServerTransport()
+        transport = stdio_server()
         await self.server.connect(transport)
         logger.error("[Setup] ReadThis MCPサーバーが起動しました（stdio経由）")
 
